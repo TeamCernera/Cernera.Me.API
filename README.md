@@ -1,2 +1,2 @@
-# Cernera.Me.API
-Cernera.me API server
+# Cernera.Me.Server
+Back-end of the Cernera.me website
