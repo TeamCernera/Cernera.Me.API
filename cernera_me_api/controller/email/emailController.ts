@@ -2,6 +2,7 @@ import express = require('express');
 import bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
+import EmailerService from "../../lib/email/emailerService";
 
 var router = express.Router();
 
@@ -12,43 +13,44 @@ router.get('/test', function (req: express.Request, res: express.Response) {
     res.send('Email Controller Ready...');
 })
 
-router.post('/sendEmail', async (req, res) => {
+router.post('/send', async (req, res) => {
     console.log(`Sending email with information: `);
-    let name = req.body.name,
-        emailAddress = req.body.email,
-        subject = req.body.subject,
-        message = req.body.message,
-        userEmail = req.body.toEmail;
+    if (process.env.EMAIL && process.env.PASSWORD) {
+        const emailer = new EmailerService(
+            process.env.EMAIL, // autoEmailAddress
+            process.env.PASSWORD, // autoEmailPassword
+            req.body.email, // requesterEmail
+            req.body.name, // requesterName
+            req.body.toEmail, // toEmail
+            req.body.subject, // subject
+            req.body.message // message
+        )
 
-    let text = `Name: ${name}\n\nEmail Address: ${emailAddress}\n\n${message}`
-
-    // Step 1
-    let transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL, // sender gmail account
-            pass: process.env.PASSWORD // sender password
-        }
-    });
-
-    // Step 2
-    let mailOptions = {
-        from: process.env.EMAIL,
-        to: userEmail,
-        subject: subject,
-        text: text
-    };
-
-    // Step 3
-    transporter.sendMail(mailOptions, (err: any, data: any) => {
-        if (err) {
-            console.log('Error occurs');
-            res.send(false);
-        }
-        console.log('Email sent');
-        res.send(true);
-    });
-
+        const transporter = emailer.createTransporter();
+        const mailOptions = emailer.generateMailOptions();
+        emailer
+            .send(transporter, mailOptions)
+            .then((msg) => {
+                console.log("Message: %o", msg);
+                if (msg.accepted) {
+                    res
+                        .status(200)
+                        .send({
+                            success: true,
+                            message: "Email sent successfully"
+                        })
+                } else {
+                    res
+                        .status(400)
+                        .send({
+                            success: false,
+                            message: "Email could not be sent"
+                        })
+                }
+            })
+    } else {
+        res.status(500)
+    }
 });
 
 module.exports = router;

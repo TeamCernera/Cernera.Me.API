@@ -35,45 +35,61 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var express = require("express");
 var bodyParser = require("body-parser");
 var nodemailer = require('nodemailer');
 require('dotenv').config();
+var emailerService_1 = __importDefault(require("../../lib/email/emailerService"));
 var router = express.Router();
 router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({ extended: true }));
 router.get('/test', function (req, res) {
     res.send('Email Controller Ready...');
 });
-router.post('/sendEmail', function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var name, emailAddress, subject, message, userEmail, text, transporter, mailOptions;
+router.post('/send', function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var emailer, transporter, mailOptions;
     return __generator(this, function (_a) {
         console.log("Sending email with information: ");
-        name = req.body.name, emailAddress = req.body.email, subject = req.body.subject, message = req.body.message, userEmail = req.body.toEmail;
-        text = "Name: " + name + "\n\nEmail Address: " + emailAddress + "\n\n" + message;
-        transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL,
-                pass: process.env.PASSWORD // sender password
-            }
-        });
-        mailOptions = {
-            from: process.env.EMAIL,
-            to: userEmail,
-            subject: subject,
-            text: text
-        };
-        // Step 3
-        transporter.sendMail(mailOptions, function (err, data) {
-            if (err) {
-                console.log('Error occurs');
-                res.send(false);
-            }
-            console.log('Email sent');
-            res.send(true);
-        });
+        if (process.env.EMAIL && process.env.PASSWORD) {
+            emailer = new emailerService_1.default(process.env.EMAIL, // autoEmailAddress
+            process.env.PASSWORD, // autoEmailPassword
+            req.body.email, // requesterEmail
+            req.body.name, // requesterName
+            req.body.toEmail, // toEmail
+            req.body.subject, // subject
+            req.body.message // message
+            );
+            transporter = emailer.createTransporter();
+            mailOptions = emailer.generateMailOptions();
+            emailer
+                .send(transporter, mailOptions)
+                .then(function (msg) {
+                console.log("Message: %o", msg);
+                if (msg.accepted) {
+                    res
+                        .status(200)
+                        .send({
+                        success: true,
+                        message: "Email sent successfully"
+                    });
+                }
+                else {
+                    res
+                        .status(400)
+                        .send({
+                        success: false,
+                        message: "Email could not be sent"
+                    });
+                }
+            });
+        }
+        else {
+            res.status(500);
+        }
         return [2 /*return*/];
     });
 }); });
