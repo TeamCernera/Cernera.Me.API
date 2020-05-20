@@ -6,6 +6,9 @@ ARG auto_email_password
 ENV EMAIL $auto_email
 ENV PASSWORD $auto_email_password
 
+RUN echo "EMAIL: $EMAIL"
+RUN echo "PASSWORD: $PASSWORD"
+
 RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
 
 WORKDIR /home/node/app
