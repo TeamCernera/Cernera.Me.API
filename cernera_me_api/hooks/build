@@ -1,0 +1,3 @@
+#!/bin/bash
+
+docker build -t $IMAGE_NAME --build-arg auto_email=$EMAIL --build-arg auto_email_password=$PASSWORD .
